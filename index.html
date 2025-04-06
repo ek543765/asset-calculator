@@ -84,6 +84,8 @@
 
   <script>
     let profitChart, cashChart;
+    let profitData = []; // 用來儲存損益數據
+    let profitLabels = []; // 用來儲存日期數據
 
     // 頁面加載時，讀取儲存的數據
     window.onload = function () {
@@ -99,7 +101,14 @@
       if (localStorage.getItem("totalCost")) {
         document.getElementById('totalCost').value = localStorage.getItem("totalCost");
       }
-    }
+
+      // 讀取儲存的損益資料
+      if (localStorage.getItem("profitData")) {
+        profitData = JSON.parse(localStorage.getItem("profitData"));
+        profitLabels = JSON.parse(localStorage.getItem("profitLabels"));
+        updateProfitChart();
+      }
+    };
 
     function calculateProfit() {
       const invested = parseFloat(document.getElementById('invested').value);
@@ -119,33 +128,58 @@
       localStorage.setItem("invested", invested);
       localStorage.setItem("current", current);
 
+      // 記錄日期和損益
+      const date = new Date().toLocaleDateString();
+      profitLabels.push(date);
+      profitData.push(percent);
+
+      // 儲存到 localStorage
+      localStorage.setItem("profitData", JSON.stringify(profitData));
+      localStorage.setItem("profitLabels", JSON.stringify(profitLabels));
+
+      // 更新折線圖
+      updateProfitChart();
+    }
+
+    function updateProfitChart() {
       const ctx = document.getElementById('profitChart').getContext('2d');
       if (profitChart) profitChart.destroy();
       profitChart = new Chart(ctx, {
-        type: 'pie',
+        type: 'line',
         data: {
-          labels: ['投入金額', '損益'],
+          labels: profitLabels,
           datasets: [{
-            data: [invested, Math.abs(diff)],
-            backgroundColor: ['#4fc3f7', diff >= 0 ? '#81c784' : '#e57373']
+            label: '損益百分比 (%)',
+            data: profitData,
+            borderColor: '#4caf50',
+            backgroundColor: 'rgba(76, 175, 80, 0.2)',
+            fill: true,
+            tension: 0.4
           }]
         },
         options: {
+          responsive: true,
           plugins: {
-            legend: { display: false },
-            datalabels: {
-              color: '#fff',
-              font: { weight: 'bold' },
-              formatter: (value, ctx) => {
-                const label = ctx.chart.data.labels[ctx.dataIndex];
-                const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                const percent = (value / total * 100).toFixed(1);
-                return `${label}\n${percent}%`;
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: '日期'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: '損益百分比 (%)'
+              },
+              ticks: {
+                beginAtZero: true
               }
             }
           }
-        },
-        plugins: [ChartDataLabels]
+        }
       });
     }
 
