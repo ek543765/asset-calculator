@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>現金佔總成本比例</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f0f4f8;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 500px;
+      box-sizing: border-box;
+    }
+    input, button {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    canvas {
+      margin-top: 1rem;
+      max-width: 100%;
+    }
+    h2 {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>💵 現金佔總成本比例</h2>
+    <input id="cash" type="number" placeholder="現金金額 (如：5000)" />
+    <input id="totalCost" type="number" placeholder="總成本 (如：15000)" />
+    <button onclick="generateCashRatio()">計算比例</button>
+    <canvas id="cashChart" width="400" height="400"></canvas>
+  </div>
+
+  <script>
+    let chart;
+
+    function generateCashRatio() {
+      const cash = parseFloat(document.getElementById('cash').value);
+      const total = parseFloat(document.getElementById('totalCost').value);
+
+      if (isNaN(cash) || isNaN(total) || total <= 0 || cash < 0) {
+        alert("請正確輸入現金與總成本");
+        return;
+      }
+
+      const others = total - cash;
+      const ctx = document.getElementById('cashChart').getContext('2d');
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['現金', '其他資產'],
+          datasets: [{
+            data: [cash, others],
+            backgroundColor: ['#26c6da', '#b2dfdb']
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              color: '#fff',
+              font: { weight: 'bold', size: 14 },
+              formatter: (value, ctx) => {
+                const label = ctx.chart.data.labels[ctx.dataIndex];
+                const totalVal = ctx.chart.data.datasets[0].data.reduce((a,b) => a+b, 0);
+                const percent = (value / totalVal * 100).toFixed(1);
+                return `${label}
+${percent}%`;
+              }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+    }
+  </script>
+</body>
+</html>
