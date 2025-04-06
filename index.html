@@ -9,17 +9,18 @@
     body {
       font-family: sans-serif;
       background-color: #f0f4f8;
+      padding: 2rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 2rem;
     }
     .container {
       background: white;
       padding: 2rem;
+      margin-bottom: 2rem;
       border-radius: 1rem;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-width: 400px;
+      max-width: 420px;
       width: 100%;
     }
     input, button {
@@ -39,86 +40,144 @@
     button:hover {
       background-color: #0056b3;
     }
-    .result {
+    .result, .note {
       margin-top: 1rem;
-      font-size: 1.1rem;
-      color: #333;
+      font-size: 1rem;
       text-align: center;
+    }
+    .note {
+      color: #666;
     }
     canvas {
       margin-top: 1rem;
     }
+    h2 {
+      text-align: center;
+    }
   </style>
 </head>
 <body>
+
+  <!-- 🔹 區塊 1：報酬/虧損計算 -->
   <div class="container">
-    <h2>📊 資產計算器</h2>
-    <input id="invested" type="number" placeholder="投入金額 (如：50000)" />
-    <input id="currentValue" type="number" placeholder="目前價值 (如：60000)" />
-    <button onclick="calculate()">計算</button>
+    <h2>📈 損益計算區</h2>
+    <input id="invested" type="number" placeholder="投入金額 (如：16918)" value="16918" />
+    <input id="currentValue" type="number" placeholder="目前價值 (如：20000)" />
+    <button onclick="calculate()">計算報酬/虧損</button>
+    <div class="note">💡 目前投入金額：$16918</div>
     <div class="result" id="result"></div>
-    <canvas id="pieChart" width="300" height="300"></canvas>
+    <canvas id="pieChart1" width="300" height="300"></canvas>
+  </div>
+
+  <!-- 🔹 區塊 2：資產分布圖 -->
+  <div class="container">
+    <h2>💰 資產分布圖</h2>
+    <input id="cash" type="number" placeholder="現金金額 (如：5000)" />
+    <input id="nvda" type="number" placeholder="NVDA 股票金額 (如：8000)" />
+    <input id="tsla" type="number" placeholder="TSLA 股票金額 (如：4000)" />
+    <button onclick="generateAssetChart()">產生資產分布圖</button>
+    <canvas id="pieChart2" width="300" height="300"></canvas>
   </div>
 
   <script>
-    let chart;
+    let chart1, chart2;
 
+    // 🔹 損益計算區：產生第一個圓餅圖
     function calculate() {
       const invested = parseFloat(document.getElementById('invested').value);
       const currentValue = parseFloat(document.getElementById('currentValue').value);
+      const result = document.getElementById('result');
 
       if (isNaN(invested) || isNaN(currentValue) || invested <= 0) {
-        document.getElementById('result').innerText = "❌ 請正確輸入所有欄位！";
+        result.innerText = "❌ 請正確輸入所有欄位！";
         return;
       }
 
       let label = '';
       let value = 0;
       let percent = 0;
-      let colors = [];
       let chartData = [];
 
       if (currentValue >= invested) {
-        // 賺錢
         value = currentValue - invested;
         percent = (value / invested) * 100;
         label = `📈 報酬金額：$${value.toLocaleString()}（+${percent.toFixed(2)}%）`;
-        colors = ['#2196f3', '#4caf50']; // 原本 + 賺的
         chartData = [invested, value];
       } else {
-        // 虧損
         value = invested - currentValue;
         percent = (value / invested) * 100;
         label = `📉 虧損金額：$${value.toLocaleString()}（-${percent.toFixed(2)}%）`;
-        colors = ['#f44336', '#4caf50']; // 虧損 + 剩下的
-        chartData = [value, currentValue];
+        chartData = [invested, -value];
       }
 
-      document.getElementById('result').innerText = label;
+      result.innerText = label;
 
-      const ctx = document.getElementById('pieChart').getContext('2d');
-
-      if (chart) chart.destroy();
-
-      chart = new Chart(ctx, {
+      const ctx1 = document.getElementById('pieChart1').getContext('2d');
+      if (chart1) chart1.destroy();
+      chart1 = new Chart(ctx1, {
         type: 'pie',
         data: {
-          labels: currentValue >= invested ? ['投入金額', '報酬'] : ['虧損金額', '目前價值'],
+          labels: ['投入金額', currentValue >= invested ? '報酬' : '虧損'],
           datasets: [{
             data: chartData,
+            backgroundColor: ['#2196f3', '#4caf50'], // 固定藍綠
+            hoverOffset: 10
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+    }
+
+    // 🔹 資產分布圖：產生第二個圓餅圖
+    function generateAssetChart() {
+      const cash = parseFloat(document.getElementById('cash').value) || 0;
+      const nvda = parseFloat(document.getElementById('nvda').value) || 0;
+      const tsla = parseFloat(document.getElementById('tsla').value) || 0;
+
+      const labels = [];
+      const data = [];
+      const colors = [];
+
+      if (cash > 0) {
+        labels.push('現金');
+        data.push(cash);
+        colors.push('#2196f3'); // 藍
+      }
+      if (nvda > 0) {
+        labels.push('NVDA');
+        data.push(nvda);
+        colors.push('#81c784'); // 淺綠
+      }
+      if (tsla > 0) {
+        labels.push('TSLA');
+        data.push(tsla);
+        colors.push('#388e3c'); // 深綠
+      }
+
+      const ctx2 = document.getElementById('pieChart2').getContext('2d');
+      if (chart2) chart2.destroy();
+      chart2 = new Chart(ctx2, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
             backgroundColor: colors,
             hoverOffset: 10
           }]
         },
         options: {
           plugins: {
-            legend: {
-              position: 'bottom'
-            }
+            legend: { position: 'bottom' }
           }
         }
       });
     }
   </script>
+
 </body>
 </html>
