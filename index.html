@@ -5,23 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>資產計算器</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
     body {
       font-family: sans-serif;
       background-color: #f0f4f8;
       padding: 2rem;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
+    }
+    .flex-container {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 1200px;
+      width: 100%;
     }
     .container {
       background: white;
       padding: 2rem;
-      margin-bottom: 2rem;
       border-radius: 1rem;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-width: 420px;
-      width: 100%;
+      width: 500px;
+      box-sizing: border-box;
     }
     input, button {
       width: 100%;
@@ -40,6 +47,12 @@
     button:hover {
       background-color: #0056b3;
     }
+    .small-btn {
+      font-size: 0.9rem;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      background-color: #28a745;
+    }
     .result, .note {
       margin-top: 1rem;
       font-size: 1rem;
@@ -50,39 +63,59 @@
     }
     canvas {
       margin-top: 1rem;
+      max-width: 100%;
     }
     h2 {
       text-align: center;
+    }
+    .row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .row input {
+      flex: 1;
     }
   </style>
 </head>
 <body>
 
-  <!-- 🔹 區塊 1：報酬/虧損計算 -->
-  <div class="container">
-    <h2>📈 損益計算區</h2>
-    <input id="invested" type="number" placeholder="投入金額 (如：16918)" value="16918" />
-    <input id="currentValue" type="number" placeholder="目前價值 (如：20000)" />
-    <button onclick="calculate()">計算報酬/虧損</button>
-    <div class="note">💡 目前投入金額：$16918</div>
-    <div class="result" id="result"></div>
-    <canvas id="pieChart1" width="300" height="300"></canvas>
-  </div>
+  <div class="flex-container">
+    <!-- 左邊：損益計算 -->
+    <div class="container">
+      <h2>📈 損益計算區</h2>
+      <input id="invested" type="number" placeholder="投入金額 (如：16918)" value="16918" />
+      <input id="currentValue" type="number" placeholder="目前價值 (如：20000)" />
+      <button onclick="calculate()">計算報酬/虧損</button>
+      <div class="note">💡 目前投入金額：$16918</div>
+      <div class="result" id="result"></div>
+      <canvas id="pieChart1" width="400" height="400"></canvas>
+    </div>
 
-  <!-- 🔹 區塊 2：資產分布圖 -->
-  <div class="container">
-    <h2>💰 資產分布圖</h2>
-    <input id="cash" type="number" placeholder="現金金額 (如：5000)" />
-    <input id="nvda" type="number" placeholder="NVDA 股票金額 (如：8000)" />
-    <input id="tsla" type="number" placeholder="TSLA 股票金額 (如：4000)" />
-    <button onclick="generateAssetChart()">產生資產分布圖</button>
-    <canvas id="pieChart2" width="300" height="300"></canvas>
+    <!-- 右邊：資產分布 -->
+    <div class="container">
+      <h2>💰 資產分布圖</h2>
+      <input id="cash" type="number" placeholder="現金金額 (如：5000)" />
+      
+      <div id="stockInputs">
+        <div class="row">
+          <input type="text" placeholder="股票名稱 (如：NVDA)" value="NVDA" class="stock-name"/>
+          <input type="number" placeholder="金額" value="8000" class="stock-value"/>
+        </div>
+        <div class="row">
+          <input type="text" placeholder="股票名稱 (如：TSLA)" value="TSLA" class="stock-name"/>
+          <input type="number" placeholder="金額" value="4000" class="stock-value"/>
+        </div>
+      </div>
+
+      <button class="small-btn" onclick="addStockInput()">➕ 新增股票欄</button>
+      <button onclick="generateAssetChart()">產生資產分布圖</button>
+      <canvas id="pieChart2" width="400" height="400"></canvas>
+    </div>
   </div>
 
   <script>
     let chart1, chart2;
 
-    // 🔹 損益計算區：產生第一個圓餅圖
     function calculate() {
       const invested = parseFloat(document.getElementById('invested').value);
       const currentValue = parseFloat(document.getElementById('currentValue').value);
@@ -107,7 +140,7 @@
         value = invested - currentValue;
         percent = (value / invested) * 100;
         label = `📉 虧損金額：$${value.toLocaleString()}（-${percent.toFixed(2)}%）`;
-        chartData = [invested, -value];
+        chartData = [currentValue, value];
       }
 
       result.innerText = label;
@@ -120,24 +153,31 @@
           labels: ['投入金額', currentValue >= invested ? '報酬' : '虧損'],
           datasets: [{
             data: chartData,
-            backgroundColor: ['#2196f3', '#4caf50'], // 固定藍綠
-            hoverOffset: 10
+            backgroundColor: ['#2196f3', '#4caf50']
           }]
         },
         options: {
           plugins: {
-            legend: { position: 'bottom' }
+            legend: { position: 'bottom' },
+            datalabels: {
+              color: '#333',
+              formatter: (value, context) => {
+                let total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                let pct = (value / total * 100).toFixed(1);
+                return `${context.chart.data.labels[context.dataIndex]}: ${pct}%`;
+              },
+              anchor: 'end',
+              align: 'end',
+              offset: 10
+            }
           }
-        }
+        },
+        plugins: [ChartDataLabels]
       });
     }
 
-    // 🔹 資產分布圖：產生第二個圓餅圖
     function generateAssetChart() {
       const cash = parseFloat(document.getElementById('cash').value) || 0;
-      const nvda = parseFloat(document.getElementById('nvda').value) || 0;
-      const tsla = parseFloat(document.getElementById('tsla').value) || 0;
-
       const labels = [];
       const data = [];
       const colors = [];
@@ -145,18 +185,21 @@
       if (cash > 0) {
         labels.push('現金');
         data.push(cash);
-        colors.push('#2196f3'); // 藍
+        colors.push('#2196f3');
       }
-      if (nvda > 0) {
-        labels.push('NVDA');
-        data.push(nvda);
-        colors.push('#81c784'); // 淺綠
-      }
-      if (tsla > 0) {
-        labels.push('TSLA');
-        data.push(tsla);
-        colors.push('#388e3c'); // 深綠
-      }
+
+      const names = document.querySelectorAll('.stock-name');
+      const values = document.querySelectorAll('.stock-value');
+
+      names.forEach((input, i) => {
+        const name = input.value.trim() || `股票${i + 1}`;
+        const value = parseFloat(values[i].value);
+        if (!isNaN(value) && value > 0) {
+          labels.push(name);
+          data.push(value);
+          colors.push(randomColor());
+        }
+      });
 
       const ctx2 = document.getElementById('pieChart2').getContext('2d');
       if (chart2) chart2.destroy();
@@ -166,18 +209,44 @@
           labels: labels,
           datasets: [{
             data: data,
-            backgroundColor: colors,
-            hoverOffset: 10
+            backgroundColor: colors
           }]
         },
         options: {
           plugins: {
-            legend: { position: 'bottom' }
+            legend: { position: 'bottom' },
+            datalabels: {
+              color: '#333',
+              formatter: (value, context) => {
+                let total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                let pct = (value / total * 100).toFixed(1);
+                return `${context.chart.data.labels[context.dataIndex]}: ${pct}%`;
+              },
+              anchor: 'end',
+              align: 'end',
+              offset: 10
+            }
           }
-        }
+        },
+        plugins: [ChartDataLabels]
       });
     }
-  </script>
 
+    function addStockInput() {
+      const container = document.getElementById('stockInputs');
+      const row = document.createElement('div');
+      row.classList.add('row');
+      row.innerHTML = `
+        <input type="text" placeholder="股票名稱" class="stock-name" />
+        <input type="number" placeholder="金額" class="stock-value" />
+      `;
+      container.appendChild(row);
+    }
+
+    function randomColor() {
+      const colors = ['#4caf50', '#ff9800', '#9c27b0', '#f44336', '#03a9f4', '#795548'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+  </script>
 </body>
 </html>
