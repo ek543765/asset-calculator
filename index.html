@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>資產計算器</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 100%;
+    }
+    input, button {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .result {
+      margin-top: 1.5rem;
+      font-size: 1.1rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📈 資產計算器</h2>
+    <input id="invested" type="number" placeholder="投入金額 (如：50000)" />
+    <input id="currentValue" type="number" placeholder="目前價值 (如：45000)" />
+    <input id="totalAssets" type="number" placeholder="總資產 (如：200000)" />
+    <button onclick="calculate()">計算</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    function calculate() {
+      const invested = parseFloat(document.getElementById('invested').value);
+      const currentValue = parseFloat(document.getElementById('currentValue').value);
+      const totalAssets = parseFloat(document.getElementById('totalAssets').value);
+
+      if (isNaN(invested) || isNaN(currentValue) || isNaN(totalAssets) || invested === 0 || totalAssets === 0) {
+        document.getElementById('result').innerText = "❌ 請正確輸入所有欄位！";
+        return;
+      }
+
+      const lossPercent = ((invested - currentValue) / invested) * 100;
+      const investRatio = (invested / totalAssets) * 100;
+
+      document.getElementById('result').innerHTML = `
+        ✅ 虧損百分比：${lossPercent.toFixed(2)}%<br/>
+        ✅ 投入佔總資產：${investRatio.toFixed(2)}%
+      `;
+    }
+  </script>
+</body>
+</html>
