@@ -1,11 +1,12 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>資產計算器</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
     body {
       font-family: sans-serif;
@@ -80,7 +81,6 @@
 <body>
 
   <div class="flex-container">
-    <!-- 左邊：損益計算 -->
     <div class="container">
       <h2>📈 損益計算區</h2>
       <input id="invested" type="number" placeholder="投入金額 (如：16918)" value="16918" />
@@ -91,7 +91,6 @@
       <canvas id="pieChart1" width="400" height="400"></canvas>
     </div>
 
-    <!-- 右邊：資產分布 -->
     <div class="container">
       <h2>💰 資產分布圖</h2>
       <input id="cash" type="number" placeholder="現金金額 (如：5000)" />
@@ -157,8 +156,6 @@
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
             datalabels: {
@@ -171,7 +168,8 @@
                 const label = context.chart.data.labels[context.dataIndex];
                 const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                 const percent = (value / total * 100).toFixed(1);
-                return `${label}\n${percent}%`;
+                return `${label}
+${percent}%`;
               }
             }
           }
@@ -217,8 +215,6 @@
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
             datalabels: {
@@ -231,7 +227,8 @@
                 const label = context.chart.data.labels[context.dataIndex];
                 const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                 const percent = (value / total * 100).toFixed(1);
-                return `${label}\n${percent}%`;
+                return `${label}
+${percent}%`;
               }
             }
           }
