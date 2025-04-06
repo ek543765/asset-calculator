@@ -86,6 +86,8 @@
     let profitChart, cashChart;
     let profitData = []; // 用來儲存損益數據
     let profitLabels = []; // 用來儲存日期數據
+    let cashData = []; // 用來儲存現金比例數據
+    let cashLabels = []; // 用來儲存日期數據
 
     // 頁面加載時，讀取儲存的數據
     window.onload = function () {
@@ -107,6 +109,13 @@
         profitData = JSON.parse(localStorage.getItem("profitData"));
         profitLabels = JSON.parse(localStorage.getItem("profitLabels"));
         updateProfitChart();
+      }
+
+      // 讀取儲存的現金比例資料
+      if (localStorage.getItem("cashData")) {
+        cashData = JSON.parse(localStorage.getItem("cashData"));
+        cashLabels = JSON.parse(localStorage.getItem("cashLabels"));
+        updateCashChart();
       }
     };
 
@@ -137,7 +146,7 @@
       localStorage.setItem("profitData", JSON.stringify(profitData));
       localStorage.setItem("profitLabels", JSON.stringify(profitLabels));
 
-      // 更新折線圖
+      // 更新損益折線圖
       updateProfitChart();
     }
 
@@ -190,38 +199,62 @@
         alert("請正確輸入現金與總成本");
         return;
       }
-      const others = total - cash;
+      const cashPercentage = (cash / total * 100).toFixed(2);
+      const date = new Date().toLocaleDateString();
+      cashLabels.push(date);
+      cashData.push(cashPercentage);
+
       // 儲存資料
       localStorage.setItem("cash", cash);
       localStorage.setItem("totalCost", total);
 
+      // 儲存到 localStorage
+      localStorage.setItem("cashData", JSON.stringify(cashData));
+      localStorage.setItem("cashLabels", JSON.stringify(cashLabels));
+
+      // 更新現金比例折線圖
+      updateCashChart();
+    }
+
+    function updateCashChart() {
       const ctx = document.getElementById('cashChart').getContext('2d');
       if (cashChart) cashChart.destroy();
       cashChart = new Chart(ctx, {
-        type: 'pie',
+        type: 'line',
         data: {
-          labels: ['現金', '其他資產'],
+          labels: cashLabels,
           datasets: [{
-            data: [cash, others],
-            backgroundColor: ['#26c6da', '#b2dfdb']
+            label: '現金佔總成本比例 (%)',
+            data: cashData,
+            borderColor: '#26c6da',
+            backgroundColor: 'rgba(38, 198, 218, 0.2)',
+            fill: true,
+            tension: 0.4
           }]
         },
         options: {
+          responsive: true,
           plugins: {
-            legend: { display: false },
-            datalabels: {
-              color: '#fff',
-              font: { weight: 'bold' },
-              formatter: (value, ctx) => {
-                const label = ctx.chart.data.labels[ctx.dataIndex];
-                const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                const percent = (value / total * 100).toFixed(1);
-                return `${label}\n${percent}%`;
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: '日期'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: '現金佔總成本比例 (%)'
+              },
+              ticks: {
+                beginAtZero: true
               }
             }
           }
-        },
-        plugins: [ChartDataLabels]
+        }
       });
     }
   </script>
