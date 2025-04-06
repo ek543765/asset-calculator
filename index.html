@@ -10,31 +10,34 @@
   <style>
     body {
       font-family: sans-serif;
-      background-color: #f0f4f8;
+      background-color: #f4f7fa;
+      margin: 0;
       padding: 2rem;
       display: flex;
       justify-content: center;
     }
-    .flex-container {
+    .wrapper {
       display: flex;
       gap: 2rem;
       flex-wrap: wrap;
-      justify-content: center;
-      max-width: 1200px;
-      width: 100%;
     }
-    .container {
+    .section {
       background: white;
-      padding: 2rem;
+      padding: 1.5rem;
       border-radius: 1rem;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      width: 500px;
+      width: 420px;
       box-sizing: border-box;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.3rem;
+      text-align: center;
     }
     input, button {
       width: 100%;
-      padding: 0.75rem;
-      margin: 0.5rem 0;
+      padding: 0.6rem;
+      margin: 0.4rem 0;
       font-size: 1rem;
       border-radius: 0.5rem;
       border: 1px solid #ccc;
@@ -48,111 +51,63 @@
     button:hover {
       background-color: #0056b3;
     }
-    .small-btn {
-      font-size: 0.9rem;
-      padding: 0.5rem;
-      margin-bottom: 1rem;
-      background-color: #28a745;
-    }
-    .result, .note {
+    .result {
       margin-top: 1rem;
-      font-size: 1rem;
+      font-weight: bold;
       text-align: center;
-    }
-    .note {
-      color: #666;
     }
     canvas {
       margin-top: 1rem;
       max-width: 100%;
     }
-    h2 {
-      text-align: center;
-    }
-    .row {
-      display: flex;
-      gap: 0.5rem;
-    }
-    .row input {
-      flex: 1;
-    }
   </style>
 </head>
 <body>
-
-  <div class="flex-container">
-    <div class="container">
-      <h2>📈 損益計算區</h2>
-      <input id="invested" type="number" placeholder="投入金額 (如：16918)" value="16918" />
-      <input id="currentValue" type="number" placeholder="目前價值 (如：20000)" />
-      <button onclick="calculate()">計算報酬/虧損</button>
-      <div class="note">💡 目前投入金額：$16918</div>
-      <div class="result" id="result"></div>
-      <canvas id="pieChart1" width="400" height="400"></canvas>
+  <div class="wrapper">
+    <div class="section">
+      <h2>📉 損益計算區</h2>
+      <input id="invested" type="number" placeholder="投入金額" />
+      <input id="current" type="number" placeholder="目前資產金額" />
+      <button onclick="calculateProfit()">計算損益</button>
+      <div class="result" id="profitResult"></div>
+      <canvas id="profitChart" height="300"></canvas>
     </div>
 
-    <div class="container">
-      <h2>💰 資產分布圖</h2>
-      <input id="cash" type="number" placeholder="現金金額 (如：5000)" />
-      
-      <div id="stockInputs">
-        <div class="row">
-          <input type="text" placeholder="股票名稱 (如：NVDA)" value="NVDA" class="stock-name"/>
-          <input type="number" placeholder="金額" value="8000" class="stock-value"/>
-        </div>
-        <div class="row">
-          <input type="text" placeholder="股票名稱 (如：TSLA)" value="TSLA" class="stock-name"/>
-          <input type="number" placeholder="金額" value="4000" class="stock-value"/>
-        </div>
-      </div>
-
-      <button class="small-btn" onclick="addStockInput()">➕ 新增股票欄</button>
-      <button onclick="generateAssetChart()">產生資產分布圖</button>
-      <canvas id="pieChart2" width="400" height="400"></canvas>
+    <div class="section">
+      <h2>💵 現金佔總成本比例</h2>
+      <input id="cash" type="number" placeholder="現金金額" />
+      <input id="totalCost" type="number" placeholder="總成本" />
+      <button onclick="generateCashRatio()">計算比例</button>
+      <canvas id="cashChart" height="300"></canvas>
     </div>
   </div>
 
   <script>
-    let chart1, chart2;
+    let profitChart, cashChart;
 
-    function calculate() {
+    function calculateProfit() {
       const invested = parseFloat(document.getElementById('invested').value);
-      const currentValue = parseFloat(document.getElementById('currentValue').value);
-      const result = document.getElementById('result');
-
-      if (isNaN(invested) || isNaN(currentValue) || invested <= 0) {
-        result.innerText = "❌ 請正確輸入所有欄位！";
+      const current = parseFloat(document.getElementById('current').value);
+      if (isNaN(invested) || isNaN(current) || invested <= 0) {
+        alert("請正確輸入金額");
         return;
       }
+      const diff = current - invested;
+      const percent = (diff / invested * 100).toFixed(2);
+      const resultText = diff >= 0
+        ? `📈 盈利：$${diff}（+${percent}%）`
+        : `📉 虧損：$${Math.abs(diff)}（${percent}%）`;
+      document.getElementById('profitResult').textContent = resultText;
 
-      let label = '';
-      let value = 0;
-      let percent = 0;
-      let chartData = [];
-
-      if (currentValue >= invested) {
-        value = currentValue - invested;
-        percent = (value / invested) * 100;
-        label = `📈 報酬金額：$${value.toLocaleString()}（+${percent.toFixed(2)}%）`;
-        chartData = [invested, value];
-      } else {
-        value = invested - currentValue;
-        percent = (value / invested) * 100;
-        label = `📉 虧損金額：$${value.toLocaleString()}（-${percent.toFixed(2)}%）`;
-        chartData = [currentValue, value];
-      }
-
-      result.innerText = label;
-
-      const ctx1 = document.getElementById('pieChart1').getContext('2d');
-      if (chart1) chart1.destroy();
-      chart1 = new Chart(ctx1, {
+      const ctx = document.getElementById('profitChart').getContext('2d');
+      if (profitChart) profitChart.destroy();
+      profitChart = new Chart(ctx, {
         type: 'pie',
         data: {
-          labels: ['投入金額', currentValue >= invested ? '報酬' : '虧損'],
+          labels: ['投入金額', '損益'],
           datasets: [{
-            data: chartData,
-            backgroundColor: ['#2196f3', '#4caf50']
+            data: [invested, Math.abs(diff)],
+            backgroundColor: ['#4fc3f7', diff >= 0 ? '#81c784' : '#e57373']
           }]
         },
         options: {
@@ -160,13 +115,10 @@
             legend: { display: false },
             datalabels: {
               color: '#fff',
-              font: {
-                weight: 'bold',
-                size: 14
-              },
-              formatter: (value, context) => {
-                const label = context.chart.data.labels[context.dataIndex];
-                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+              font: { weight: 'bold' },
+              formatter: (value, ctx) => {
+                const label = ctx.chart.data.labels[ctx.dataIndex];
+                const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                 const percent = (value / total * 100).toFixed(1);
                 return `${label}
 ${percent}%`;
@@ -178,40 +130,23 @@ ${percent}%`;
       });
     }
 
-    function generateAssetChart() {
-      const cash = parseFloat(document.getElementById('cash').value) || 0;
-      const labels = [];
-      const data = [];
-      const colors = [];
-
-      if (cash > 0) {
-        labels.push('現金');
-        data.push(cash);
-        colors.push('#2196f3');
+    function generateCashRatio() {
+      const cash = parseFloat(document.getElementById('cash').value);
+      const total = parseFloat(document.getElementById('totalCost').value);
+      if (isNaN(cash) || isNaN(total) || total <= 0 || cash < 0) {
+        alert("請正確輸入現金與總成本");
+        return;
       }
-
-      const names = document.querySelectorAll('.stock-name');
-      const values = document.querySelectorAll('.stock-value');
-
-      names.forEach((input, i) => {
-        const name = input.value.trim() || `股票${i + 1}`;
-        const value = parseFloat(values[i].value);
-        if (!isNaN(value) && value > 0) {
-          labels.push(name);
-          data.push(value);
-          colors.push(randomColor());
-        }
-      });
-
-      const ctx2 = document.getElementById('pieChart2').getContext('2d');
-      if (chart2) chart2.destroy();
-      chart2 = new Chart(ctx2, {
+      const others = total - cash;
+      const ctx = document.getElementById('cashChart').getContext('2d');
+      if (cashChart) cashChart.destroy();
+      cashChart = new Chart(ctx, {
         type: 'pie',
         data: {
-          labels: labels,
+          labels: ['現金', '其他資產'],
           datasets: [{
-            data: data,
-            backgroundColor: colors
+            data: [cash, others],
+            backgroundColor: ['#26c6da', '#b2dfdb']
           }]
         },
         options: {
@@ -219,13 +154,10 @@ ${percent}%`;
             legend: { display: false },
             datalabels: {
               color: '#fff',
-              font: {
-                weight: 'bold',
-                size: 14
-              },
-              formatter: (value, context) => {
-                const label = context.chart.data.labels[context.dataIndex];
-                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+              font: { weight: 'bold' },
+              formatter: (value, ctx) => {
+                const label = ctx.chart.data.labels[ctx.dataIndex];
+                const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                 const percent = (value / total * 100).toFixed(1);
                 return `${label}
 ${percent}%`;
@@ -235,22 +167,6 @@ ${percent}%`;
         },
         plugins: [ChartDataLabels]
       });
-    }
-
-    function addStockInput() {
-      const container = document.getElementById('stockInputs');
-      const row = document.createElement('div');
-      row.classList.add('row');
-      row.innerHTML = `
-        <input type="text" placeholder="股票名稱" class="stock-name" />
-        <input type="number" placeholder="金額" class="stock-value" />
-      `;
-      container.appendChild(row);
-    }
-
-    function randomColor() {
-      const colors = ['#4caf50', '#ff9800', '#9c27b0', '#f44336', '#03a9f4', '#795548'];
-      return colors[Math.floor(Math.random() * colors.length)];
     }
   </script>
 </body>
