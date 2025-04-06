@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>資產計算器</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: sans-serif;
@@ -39,40 +40,84 @@
       background-color: #0056b3;
     }
     .result {
-      margin-top: 1.5rem;
+      margin-top: 1rem;
       font-size: 1.1rem;
       color: #333;
+      text-align: center;
+    }
+    canvas {
+      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>📈 資產計算器</h2>
+    <h2>📊 資產計算器</h2>
     <input id="invested" type="number" placeholder="投入金額 (如：50000)" />
-    <input id="currentValue" type="number" placeholder="目前價值 (如：45000)" />
-    <input id="totalAssets" type="number" placeholder="總資產 (如：200000)" />
+    <input id="currentValue" type="number" placeholder="目前價值 (如：60000)" />
     <button onclick="calculate()">計算</button>
     <div class="result" id="result"></div>
+    <canvas id="pieChart" width="300" height="300"></canvas>
   </div>
 
   <script>
+    let chart;
+
     function calculate() {
       const invested = parseFloat(document.getElementById('invested').value);
       const currentValue = parseFloat(document.getElementById('currentValue').value);
-      const totalAssets = parseFloat(document.getElementById('totalAssets').value);
 
-      if (isNaN(invested) || isNaN(currentValue) || isNaN(totalAssets) || invested === 0 || totalAssets === 0) {
+      if (isNaN(invested) || isNaN(currentValue) || invested <= 0) {
         document.getElementById('result').innerText = "❌ 請正確輸入所有欄位！";
         return;
       }
 
-      const lossPercent = ((invested - currentValue) / invested) * 100;
-      const investRatio = (invested / totalAssets) * 100;
+      let label = '';
+      let value = 0;
+      let percent = 0;
+      let colors = [];
+      let chartData = [];
 
-      document.getElementById('result').innerHTML = `
-        ✅ 虧損百分比：${lossPercent.toFixed(2)}%<br/>
-        ✅ 投入佔總資產：${investRatio.toFixed(2)}%
-      `;
+      if (currentValue >= invested) {
+        // 賺錢
+        value = currentValue - invested;
+        percent = (value / invested) * 100;
+        label = `📈 報酬金額：$${value.toLocaleString()}（+${percent.toFixed(2)}%）`;
+        colors = ['#2196f3', '#4caf50']; // 原本 + 賺的
+        chartData = [invested, value];
+      } else {
+        // 虧損
+        value = invested - currentValue;
+        percent = (value / invested) * 100;
+        label = `📉 虧損金額：$${value.toLocaleString()}（-${percent.toFixed(2)}%）`;
+        colors = ['#f44336', '#4caf50']; // 虧損 + 剩下的
+        chartData = [value, currentValue];
+      }
+
+      document.getElementById('result').innerText = label;
+
+      const ctx = document.getElementById('pieChart').getContext('2d');
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: currentValue >= invested ? ['投入金額', '報酬'] : ['虧損金額', '目前價值'],
+          datasets: [{
+            data: chartData,
+            backgroundColor: colors,
+            hoverOffset: 10
+          }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
     }
   </script>
 </body>
